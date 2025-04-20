@@ -1,58 +1,69 @@
 import express from "express";
+import "dotenv/config";
+import mongoose from "mongoose";
+import cors from "cors";
+import session from "express-session";
+
+// Routes
 import Hello from "./Hello.js";
 import Lab5Routes from "./Lab5/index.js";
-import cors from "cors";
 import UserRoutes from "./Kambaz/Users/routes.js";
-import session from "express-session";
 import CourseRoutes from "./Kambaz/Courses/routes.js";
-import assignmentRoutes from "./Kambaz/Assignments/routes.js";
-import EnrollmentRoutes from "./Kambaz/Enrollments/routes.js";
-import "dotenv/config";
-
 import ModuleRoutes from "./Kambaz/Modules/routes.js";
+import AssignmentRoutes from "./Kambaz/Assignments/routes.js";
+import EnrollmentRoutes from "./Kambaz/Enrollments/routes.js";
+
 const app = express();
 
-const allowedOrigins = [
+const isProduction = process.env.NODE_ENV === "production";
+const FRONTEND_ORIGINS = [
   "http://localhost:5173",
-  "https://kambaz-react-web-app-bk.netlify.app",
+  "https://kambazwebdev.netlify.app",
 ];
 
+// ✅ Mongo Connection
+const CONNECTION_STRING =
+  process.env.MONGO_CONNECTION_STRING || "mongodb://127.0.0.1:27017/kambaz";
+mongoose.connect(CONNECTION_STRING);
+
+// ✅ CORS Middleware
 app.use(
   cors({
     credentials: true,
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like curl/postman) or from the allowed list
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: FRONTEND_ORIGINS,
   })
 );
+
+// ✅ Trust proxy for Render HTTPS sessions
+app.set("trust proxy", 1);
+
+// ✅ Session Config
 const sessionOptions = {
   secret: process.env.SESSION_SECRET || "kambaz",
   resave: false,
   saveUninitialized: false,
+  proxy: isProduction,
+  cookie: {
+    sameSite: isProduction ? "none" : "lax", // 👈 needed for cross-site cookies
+    secure: isProduction, // 👈 Render is HTTPS, localhost is not
+  },
 };
-
-if (process.env.NODE_ENV !== "development") {
-  sessionOptions.proxy = true;
-  sessionOptions.cookie = {
-    sameSite: "none",
-    secure: true,
-  };
-}
 app.use(session(sessionOptions));
 
+// ✅ Body Parser
 app.use(express.json());
+
+// ✅ Routes
+Hello(app);
+Lab5Routes(app);
 UserRoutes(app);
 CourseRoutes(app);
-Lab5Routes(app);
-Hello(app);
-
-assignmentRoutes(app);
-
 ModuleRoutes(app);
+AssignmentRoutes(app);
 EnrollmentRoutes(app);
-app.listen(process.env.PORT || 4000);
+
+// ✅ Start server
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(` Server running on http://localhost:${PORT}`);
+});
