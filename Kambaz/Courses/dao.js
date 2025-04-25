@@ -1,11 +1,31 @@
 import { v4 as uuidv4 } from "uuid";
 import model from "./model.js";
 
+import enroll_model from "../Enrollments/model.js";
+
+
 export function findAllCourses() {
   return model.find();
+
 }
-export function findCoursesForEnrolledUser(userId) {
-  const { courses, enrollments } = Database;
+
+import CourseModel from "./model.js";
+
+async function findCourses() {
+  return await model.find().lean();    // array of plain objects
+}
+
+async function findEnrollments() {
+  return await enroll_model.find().lean();    // array of plain objects
+}
+
+
+export async function findCoursesForEnrolledUser(userId) {
+  const [courses, enrollments] = await Promise.all([
+    findCourses(),
+    findEnrollments(),
+  ]);
+
   const enrolledCourses = courses.filter((course) =>
     enrollments.some(
       (enrollment) =>

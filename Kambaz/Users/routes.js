@@ -78,6 +78,8 @@ export default function UserRoutes(app) {
 
   // ✅ Signin
   const signin = async (req, res) => {
+
+    console.log("signin");
     const { username, password } = req.body;
     const currentUser = await dao.findUserByCredentials(username, password);
     if (currentUser) {
@@ -108,6 +110,8 @@ export default function UserRoutes(app) {
 
   // ✅ Find all courses enrolled by user
   const findCoursesForEnrolledUser = async (req, res) => {
+
+    console.log("findCoursesForEnrolledUser");
     let { userId } = req.params;
     if (userId === "current") {
       const currentUser = req.session["currentUser"];
@@ -120,7 +124,9 @@ export default function UserRoutes(app) {
     const courses = await courseDao.findCoursesForEnrolledUser(userId);
     res.json(courses);
   };
+
   const findCoursesForUser = async (req, res) => {
+
     const currentUser = req.session["currentUser"];
 
     if (!currentUser) {
@@ -171,8 +177,9 @@ export default function UserRoutes(app) {
 
   app.post("/api/users/:uid/courses/:cid", enrollUserInCourse);
   app.delete("/api/users/:uid/courses/:cid", unenrollUserFromCourse);
-  app.get("/api/users/:uid/courses", findCoursesForUser);
   app.get("/api/users/:userId/courses", findCoursesForEnrolledUser);
+  app.get("/api/users/:uid/courses", findCoursesForUser);
+
 
   // ✅ Other routes
   app.post("/api/users", createUser);
